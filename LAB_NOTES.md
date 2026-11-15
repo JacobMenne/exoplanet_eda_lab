@@ -66,14 +66,35 @@
 #### Cell 5 — Group by Discovery Method to Expose Telescope Biases
 
 1. **Header Above Cell 5:** Add a Markdown cell: `### [Pillar 3: Exploration & Analysis] — Cell 5: Group by Discovery Method to Expose Telescope Biases`
-2. **Group and Aggregate (`groupby` + `agg`):**
-   - Take `df_clean` and group it by `"discoverymethod"` using `df_clean.groupby("discoverymethod")`.
-   - Select the 4 core physical columns in double square brackets: `[["pl_orbper", "pl_rade", "pl_bmasse", "sy_dist"]]`.
-   - Chain `.agg(["count", "median"]).round(2)` onto the end and store the result in `method_summary`.
-3. **Sort from Most Common to Rarest:**
-   - Sort `method_summary` by planet count descending: `method_summary = method_summary.sort_values(by=("pl_orbper", "count"), ascending=False)`.
-   - Place `method_summary` on the final line of Cell 5 to display the comparison table.
-4. **Git Checkpoint:** Commit with `feat(eda): add discovery method groupby median comparison in cell 5`
+2. **Group with Named Aggregation:** Group `df_clean` by `"discoverymethod"` and pass keyword pairs directly inside `.agg(...)`:
+   - `planet_count=("pl_name", "count")`
+   - `median_period_days=("pl_orbper", "median")`
+   - `median_radius_earth=("pl_rade", "median")`
+   - `median_mass_earth=("pl_bmasse", "median")`
+   - `median_dist_pc=("sy_dist", "median")`
+3. **Round and Sort:** Chain `.round(2).sort_values(by="planet_count", ascending=False)` onto the end and display `method_summary`.
+4. **Reference Below Cell 5:** Add a Markdown cell below the output defining the summary columns and discovery methods.
+5. **Git Checkpoint:** Commit with `feat(eda): add discovery method groupby median comparison in cell 5`
+
+#### Cell 6 — Feature Engineering: Calculate Planet Density & Size Classes
+
+1. **Header Above Cell 6:** Add a Markdown cell: `### [Pillar 3: Exploration & Analysis] — Cell 6: Engineer Bulk Density & Planet Size Classes`
+2. **Calculate Planet Bulk Density (`density_gcc`):**
+   - Create a new column `"density_gcc"` (in grams per cubic centimeter, where Earth = `5.51`) by dividing `df_clean["pl_bmasse"]` by `df_clean["pl_rade"] ** 3` and multiplying by `5.51`:
+     `df_clean["density_gcc"] = (df_clean["pl_bmasse"] / (df_clean["pl_rade"] ** 3)) * 5.51`
+3. **Create Planet Size Categories (`size_class`) Using `pd.cut()`:**
+   - Slice `df_clean["pl_rade"]` into 4 astronomical size bins using `pd.cut()`:
+     - `bins=[0, 1.25, 2.0, 4.0, 100]`
+     - `labels=["1. Earth-sized (<1.25 R_E)", "2. Super-Earth (1.25-2.0 R_E)", "3. Sub-Neptune (2.0-4.0 R_E)", "4. Gas Giant (>4.0 R_E)"]`
+4. **Group by `size_class` to Compare Rocky vs. Gas Worlds:**
+   - Group `df_clean` by `"size_class"` (passing `observed=False` or `observed=True` inside `.groupby("size_class", observed=True)`) and use `.agg(...)` to compute:
+     - `planet_count=("pl_name", "count")`
+     - `median_radius=("pl_rade", "median")`
+     - `median_mass=("pl_bmasse", "median")`
+     - `median_density_gcc=("density_gcc", "median")`
+     - `median_orbper_days=("pl_orbper", "median")`
+   - Chain `.round(2)` and display the resulting `size_summary` table on the final line.
+5. **Git Checkpoint:** Commit with `feat(eda): engineer bulk density and size class comparison in cell 6`
 
 ---
 
@@ -142,11 +163,29 @@ Before you can clean a dataset (Cell 4), you have to **diagnose what is broken, 
 
 ---
 
-### Pillar 3: Exploration & Analysis (Cell 5 Rationale)
+### Pillar 3: Exploration & Analysis (Cells 5 & 6 Rationale)
 
-#### How `.groupby()` and `.agg()` Work Together ("Split-Apply-Combine")
+#### Q15: Why did `.agg(["count", "median"])` repeat the `count` column 4 times, and how do we fix it?
 
-- **`df_clean.groupby("discoverymethod")`:** Splits the `6,019` clean planets into separate buckets based on how they were discovered.
-- **`[["pl_orbper", "pl_rade", "pl_bmasse", "sy_dist"]]`:** Selects the 4 physical measurement columns we want to compare across those buckets. _(Notice the double square brackets `[[...]]`—in `pandas`, passing a list of multiple column names inside a selector requires an inner list `[]` inside the outer indexing brackets `[]`)._
-- **`.agg(["count", "median"])`:** Calculates both the number of planets (`count`) and the middle value (`median`) for each of those 4 columns inside every discovery method group.
-- **Why We Expect Different Medians Across Methods (Observational Bias):** Telescopes don't see all planets equally. By comparing the median orbital period (`pl_orbper`) and median mass (`pl_bmasse`) between `Transit`, `Radial Velocity`, and `Imaging`, we can prove mathematically how each telescope technique favors a completely different type of planet.
+- **Why It Happened:** Passing a list of functions (`["count", "median"]`) across 4 selected columns tells `pandas` to calculate both functions for every column (`4 × 2 = 8` columns total), cluttering the table with 4 identical count columns and making the medians harder to compare side-by-side.
+- **The Fix (Named Aggregation):** By passing keyword pairs directly inside `.agg(planet_count=("pl_name", "count"), median_period_days=("pl_orbper", "median"), ...)`, we tell `pandas` to calculate the row count **only once** and line up all 4 median columns cleanly next to each other.
+
+#### Q16: Why did defining `planet_count = ("pl_name", "count")` outside `.agg()` and passing `"planet_count"` in quotes cause an error?
+
+- **The Reason:** Putting quotes around `"planet_count"` inside `.agg("planet_count")` tells `pandas` to look for a built-in math function named `"planet_count"` (like `"mean"` or `"sum"`), which doesn't exist. Named aggregations must be written as **keyword arguments (`new_col_name=("old_col", "func")`) directly inside the parentheses of `.agg(...)`**, just like `index=False` sits directly inside `.to_csv(...)`. Wrapping the whole chain in outer parentheses `(...)` lets you format each step on its own clean, indented line.
+
+#### Cell 5 Takeaways — What the Grouped Medians Reveal About Telescope Bias
+
+1. **Why Microlensing (`294` $\rightarrow$ `2`) and Imaging (`98` $\rightarrow$ `22`) Lost Most of Their Rows in Cell 4:**
+   - Almost all `Microlensing` and `Imaging` planets were the exact rows missing `pl_orbper` or `st_teff` that we filtered out during cleaning!
+2. **Transit vs. Radial Velocity (40x Difference in Orbit, 45x Difference in Mass):**
+   - **Transit (`4,772` clean planets):** Median orbital period is **`8.01` days**, median radius is **`2.45` Earths**, median mass is **`6.98` Earths**, and median distance is **`455.48` parsecs**. Transit excels at finding small, close-in sub-Neptunes and super-Earths deep across the galaxy because close-in planets cross in front of their star frequently.
+   - **Radial Velocity (`1,166` clean planets):** Median orbital period is **`319.70` days** (~1 Earth year), median radius is **`12.60` Earths**, median mass is **`314.65` Earths** (almost identical to Jupiter at `317.8` Earths!), and median distance is **`45.88` parsecs** (10x closer to Earth). Watching a star wobble via Doppler shift requires heavy gas giants orbiting bright, nearby stars.
+3. **Direct Imaging (`22` clean planets — Extreme Outer Giants):**
+   - Median orbital period is **`33,100` days (~90.6 Earth years)** and median mass is **`3,089.15` Earths** (~10x Jupiter!) around very close stars (**`41.24` parsecs**). Direct cameras can only resolve giant, glowing planets orbiting far outside their host star's glare.
+
+#### Cell 6 Concepts — What Is Feature Engineering (`density_gcc` & `size_class`)?
+
+- **What Feature Engineering Means:** Creating brand-new, physically meaningful columns from raw columns to reveal patterns that aren't obvious from raw numbers alone.
+- **The Bulk Density Formula (`density_gcc`):** Since a sphere's volume scales with $\text{Radius}^3$, dividing Earth-masses (`pl_bmasse`) by Earth-radii cubed (`pl_rade ** 3`) and multiplying by Earth's density (`5.51 g/cm³`) gives each planet's bulk density. Rocky planets have high densities (`~4 to 7 g/cm³`), whereas puffy gas-envelope planets have low densities (`~0.5 to 2.5 g/cm³`).
+- **How `pd.cut()` Works:** Takes a continuous number column (`pl_rade`) and slices it into named category buckets based on boundary numbers (`bins=[0, 1.25, 2.0, 4.0, 100]`), letting us group planets by physical class (`Earth-sized`, `Super-Earth`, `Sub-Neptune`, `Gas Giant`).
