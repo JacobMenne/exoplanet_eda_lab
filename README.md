@@ -25,3 +25,26 @@ An exploratory data analysis (EDA) project examining the confirmed exoplanet pop
 | **`pl_eqt`**          | Planet Equilibrium Temp | `float64` | Estimated surface/equilibrium temperature of the planet in **Kelvin ($K$)** (`255 K` $\approx$ Earth's equilibrium temp).     |
 | **`st_teff`**         | Star Surface Temp       | `float64` | Surface temperature of the host star in **Kelvin ($K$)** (`5778 K` = our Sun; `< 4000 K` = Red Dwarf).                        |
 | **`sy_dist`**         | System Distance         | `float64` | Distance from Earth to the planetary system in **parsecs ($\text{pc}$)** (`1 parsec` $\approx 3.26$ light-years).             |
+
+---
+
+## Exoplanet Discovery Methods Glossary
+
+| Discovery Method                           | Count (Share) | How It Works Physically                                                                                                                                                                    | What It Measures Best                                                                                                 |
+| :----------------------------------------- | :------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **Transit**                                | 4,799 (74.2%) | Measures the slight dip in a star's brightness when an orbiting planet crosses directly in front of the star's disk from our line of sight.                                                | **Planet Radius (`pl_rade`)** and **Orbital Period (`pl_orbper`)**. Favors planets orbiting close to their stars.     |
+| **Radial Velocity**                        | 1,205 (18.6%) | Detects the gravitational "wobble" of a star being tugged back and forth by an orbiting planet, measured via red/blue Doppler shifts in the star's spectrum.                               | **Planet Minimum Mass (`pl_bmasse`)** and **Orbital Period (`pl_orbper`)**. Favors heavy planets.                     |
+| **Microlensing**                           | 294 (4.5%)    | Uses Einstein's gravitational lensing when a foreground star passes directly in front of a distant background star, magnifying the light and revealing planets around the foreground star. | Distant planets far from their stars (often thousands of parsecs from Earth), though the alignment only happens once. |
+| **Imaging**                                | 98 (1.5%)     | Captures direct infrared photographs of planets by blocking out the blinding glare of the host star with a coronagraph.                                                                    | Young, hot, massive gas giants orbiting very far from their stars (`pl_orbper` of decades to ribuan of years).        |
+| **Timing Variations (TTV / ETV / Pulsar)** | 56 (0.9%)     | Detects unseen planets by measuring tiny early/late arrival times in a known planet's transits, binary star eclipses, or millisecond radio pulses from a neutron star.                     | Multi-planet gravitational interactions and ultra-low-mass objects.                                                   |
+| **Orbital Brightness / Astrometry / Disk** | 18 (0.3%)     | Detects planets via starlight reflection phases, tiny side-to-side sky position shifts of the star (`Astrometry`), or gaps carved in protoplanetary dust disks.                            | Massive planets or newly forming worlds.                                                                              |
+
+---
+
+## Summary Statistics Terms (`.describe()`)
+
+- **`count`**: Total number of non-empty (`non-NaN`) measurements in the column.
+- **`mean`**: Mathematical average (sum divided by `count`). Strongly pulled upward or downward by extreme outliers.
+- **`std` (Standard Deviation)**: Measures the typical spread or dispersion of numbers around the `mean`. A small `std` indicates values are tightly clustered; a large `std` indicates wide variability or extreme outliers.
+- **`min` / `max`**: The smallest and largest recorded values in the column.
+- **`25%` / `50%` (Median) / `75%`**: Quartile cutoffs when values are sorted from smallest to largest. The **`50%` median** represents the true middle planet and is resistant to extreme outliers.

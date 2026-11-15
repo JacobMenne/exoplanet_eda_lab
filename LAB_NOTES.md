@@ -41,34 +41,47 @@
 
 ### Step 1.1: Downloading and Saving the Exoplanet Data (Cell 1)
 
-1. **Import your tools:** At the very top of Cell 1 in `exoplanet_eda.ipynb`, write two import lines: one to import `os` (which lets Python check files on your hard drive) and one to import `pandas as pd` (which handles data tables).
-2. **Store the filename and web link in variables:** Create two standard Python string variables using `=` and quotation marks (`"..."`) so you don't have to paste long text strings inside your functions later:
+1. **Import your tools:** At the top of Cell 1, import `os` and `pandas as pd`.
+2. **Store the filename and web link in variables:**
    - `RAW_FILE = "exoplanets_raw.csv"`
    - `TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,hostname,discoverymethod,disc_year,sy_snum,sy_pnum,pl_orbper,pl_rade,pl_bmasse,pl_eqt,st_teff,sy_dist+from+pscomppars&format=csv"`
 3. **Check if the file is already on your computer (`if / else`):**
-   - Write an `if` statement using `os.path.exists(RAW_FILE):`.
-   - **Inside the `if` block (indented):** Load the file into `df_raw` using `pd.read_csv(RAW_FILE)` and print a message saying it loaded from disk.
-   - **Inside the `else:` block (indented):** Download the table into `df_raw` using `pd.read_csv(TAP_URL)`, save it to disk using `df_raw.to_csv(RAW_FILE, index=False)`, and print a message saying it downloaded from the web.
-4. **Inspect the loaded table (un-indented at the bottom of Cell 1):**
-   - Use an f-string `print(f"Dataset dimensions (Rows, Columns): {df_raw.shape}")` to print the row and column counts (`6470` rows, `12` columns).
-   - On the very last line of the cell, write `df_raw.head()` so Jupyter displays a preview table of the first 5 planets.
-5. **Save and commit to Git:**
-   - Save your notebook (`Ctrl + S`), then stage, commit (`feat(ingest): add NASA exoplanet download with local CSV caching`), and push to GitHub.
+   - Write `if os.path.exists(RAW_FILE):` to load `df_raw = pd.read_csv(RAW_FILE)` from disk.
+   - Write `else:` to download `df_raw = pd.read_csv(TAP_URL)` and save it via `df_raw.to_csv(RAW_FILE, index=False)`.
+4. **Inspect the loaded table:**
+   - Print `df_raw.shape` (`6470` rows, `12` columns) and display `df_raw.head()`.
+5. **Add a Markdown Reference Cell directly BELOW Cell 1:** Click `+ Markdown` under Cell 1 and paste the 12-column dictionary so the column definitions sit directly underneath the rendered `df_raw.head()` table.
+6. **Save and commit to Git:** Commit (`feat(ingest): add NASA exoplanet download with local CSV caching`) and push.
 
 ### Step 2.1: Checking Data Types and Counting Missing Values (Cell 2)
 
-1. **Check column data types and row counts:** In Cell 2, run `df_raw.info()` to see the data type (`str` for text, `int64` for whole numbers, `float64` for decimals) and non-empty row counts for all 12 columns.
-2. **Count exact missing values (`NaN`) per column:** Store the count of missing rows per column in a variable: `missing_count = df_raw.isna().sum()`.
-3. **Calculate the percentage of missing data per column:** Store the missing percentage rounded to 2 decimal places in a second variable: `missing_pct = (df_raw.isna().mean() * 100).round(2)`.
-4. **Combine into a single side-by-side summary table:** Pass a Python dictionary (`{"Missing Count": missing_count, "Missing %": missing_pct}`) into `pd.DataFrame(...)` to combine both lists side-by-side into `missing_summary`, and put `missing_summary` on the final line of the cell so Jupyter renders a compact HTML table without hitting VS Code's 30-line text limit.
-5. **Save and commit to Git:** Save the notebook and commit (`feat(eda): add schema info and missing value summary table in cell 2`).
+1. **Check column data types and row counts:** In Cell 2, run `df_raw.info()`.
+2. **Count missing values and percentages:**
+   - `missing_count = df_raw.isna().sum()`
+   - `missing_pct = (df_raw.isna().mean() * 100).round(2)`
+3. **Combine into a single side-by-side summary table:**
+   - `missing_summary = pd.DataFrame({"Missing Count": missing_count, "Missing %": missing_pct})`
+   - Put `missing_summary` on the last line of Cell 2.
+4. **Save and commit to Git:** Commit (`feat(eda): add schema info and missing value summary table in cell 2`).
 
 ### Step 2.2: Checking Summary Math, Ranges, and Weird Outliers (Cell 3)
 
-1. **Count planets by discovery method:** At the top of Cell 3, select the `"discoverymethod"` column and count how many times each method appears by running `print(df_raw["discoverymethod"].value_counts())`.
-2. **Generate summary statistics for all number columns:** On the final line of Cell 3, run `df_raw.describe().round(2)` so Jupyter renders a formatted summary table (`count`, `mean`, `std`, `min`, `25%`, `50%`, `75%`, `max`) for all 9 numeric columns.
-3. **Audit the minimums, medians, means, and maximums:** Compare the `50%` (median) row against the `mean` (average) and `max` rows to identify which columns are heavily skewed by extreme physical outliers.
-4. **Save and commit to Git:** Save the notebook and commit (`feat(eda): add numeric summary statistics and discovery method counts in cell 3`).
+1. **Count planets by discovery method:** At the top of Cell 3, run `print(df_raw["discoverymethod"].value_counts())`.
+2. **Generate summary statistics for all number columns:** On the final line of Cell 3, run `df_raw.describe().round(2)`.
+3. **Add a Markdown Reference Cell directly BELOW Cell 3:** Click `+ Markdown` under Cell 3 and paste the definitions for Discovery Methods (`Transit`, `Radial Velocity`, etc.) and `.describe()` rows (`mean`, `std`, `50%`) so they sit directly underneath the `.describe()` output table for easy side-by-side reading.
+4. **Save and commit to Git:** Commit (`feat(eda): add numeric summary statistics and discovery method counts in cell 3`).
+
+### Step 2.3: Cleaning the Data and Filtering Missing/Extreme Rows (Cell 4)
+
+1. **Decide what "clean" means for our physical analysis:**
+   - We want a clean table named `df_clean` where every planet has a known **Orbital Period (`pl_orbper`)**, **Planet Radius (`pl_rade`)**, **Planet Mass (`pl_bmasse`)**, and **Star Temperature (`st_teff`)**.
+2. **Drop rows missing those core columns (`.dropna()`):**
+   - In Cell 4, create `df_clean` by calling `df_raw.dropna(subset=["pl_orbper", "pl_rade", "pl_bmasse", "st_teff"]).copy()`. _(Adding `.copy()` at the end tells `pandas` to make `df_clean` its own independent table in memory so modifying it later never triggers warnings)._
+3. **Verify how many rows survived:**
+   - Print the original row count (`len(df_raw)`), the cleaned row count (`len(df_clean)`), and how many incomplete rows were removed (`len(df_raw) - len(df_clean)`).
+4. **Save the cleaned dataset to disk:**
+   - Save `df_clean` to `"exoplanets_clean.csv"` using `.to_csv("exoplanets_clean.csv", index=False)`.
+5. **Save and commit to Git:** Commit (`feat(clean): drop incomplete physical rows and save clean dataset in cell 4`).
 
 ---
 
@@ -159,22 +172,39 @@
 
 ---
 
-### Step 2.2: Summary Statistics & Hunting for Skew/Outliers (Cell 3)
+### Step 2.2: Summary Statistics, Discovery Methods & Extreme Outliers (Cell 3)
 
-#### 1. Why run `.value_counts()` on `discoverymethod`?
+#### Q13: What does `std` (Standard Deviation) mean in `.describe()`, and why is `pl_orbper` written in `e+04` notation?
 
-- `.describe()` only analyzes number columns (`int64` and `float64`) and ignores text columns (`str`). For categorical text columns like `discoverymethod`, `.value_counts()` is the primary tool to see how rows are distributed across categories and whether one category dominates the dataset.
+- **What `std` Means:** Standard deviation measures how spread out the numbers are around the average (`mean`). If `std` is small (like `0.34` for `sy_snum`), almost every row is very close to the average. If `std` is huge (like `1,149.19` for `pl_bmasse`), the values vary wildly across thousands of units.
+- **Why `e+04` / `e+08` Shows Up:** Whenever a column has gigantic numbers (like `402,000,000` days for the longest orbital period), `pandas` switches that column to scientific notation (`4.02e+08` = $4.02 \times 10^8$) so the column doesn't stretch too wide across the screen.
 
-#### 2. What does `df_raw.describe().round(2)` tell us?
+#### Q14: Is it better to place reference Markdown cells above or below the code cell?
 
-- It calculates 8 key summary numbers for every numeric column:
-  - `count`: Number of non-empty rows.
-  - `mean`: The standard mathematical average (sum divided by count).
-  - `std`: Standard deviation (how spread out the numbers are).
-  - `min`: The smallest value in the column (used to check for impossible `0` or negative numbers).
-  - `25%`, `50%` (**Median**), `75%`: The quartiles (the middle values when all planets are lined up from smallest to largest).
-  - `max`: The largest value in the column (used to spot extreme outliers).
+- **The Reason:** In Jupyter Notebooks, a code cell's output renders directly **below** the code block. Placing a short 1-line title header _above_ a code cell is common, but placing **definitions, glossaries, and analytical takeaways directly _below_ the code cell** puts your reference text right next to the output table it explains—so you don't have to scroll back and forth over the code box to compare definitions against numbers.
 
-#### 3. Why compare the `mean` (average) against the `50%` (median)?
+#### 1. What We Found in Our Discovery Method Breakdown (`.value_counts()`)
 
-- In astronomy (just like income or housing data), distributions are often heavily **skewed** by a few giant numbers. If 9 planets take `10` days to orbit their star and 1 extreme planet takes `1,000,000` days, the **median (`50%`)** stays at `10` days, while the **mean (`average`)** gets dragged up to `100,009` days. Comparing `mean` vs. `50%` immediately reveals which columns are distorted by extreme outliers.
+- **Two Methods Dominate (92.8% of all known exoplanets):**
+  1. **`Transit` (4,799 planets — 74.2%):** Space telescopes like _Kepler_ and _TESS_ stared at hundreds of thousands of stars simultaneously, making Transit by far the most prolific discovery method.
+  2. **`Radial Velocity` (1,205 planets — 18.6%):** Ground-based spectrographs measuring stellar wobble account for nearly a fifth of all discoveries.
+  3. **All Other 9 Methods Combined (466 planets — 7.2%):** `Microlensing` (294), `Imaging` (98), and timing/astrometric methods make up a small, specialized fraction of the catalog.
+
+#### 2. What We Found Comparing Median (`50%`) vs. Mean (`average`) in `.describe()`
+
+- **No `-999` Sentinel Codes:** Looking at the `min` row, every column has a physically valid positive minimum (`min` orbital period = `0.09` days / ~2.1 hours; `min` radius = `0.31` Earths; `min` mass = `0.02` Earths; `min` distance = `1.30` parsecs, which is Proxima Centauri!). NASA already uses true `NaN`s instead of `-999` placeholders.
+- **Massive Right-Skew in Orbital Period, Radius, and Mass:**
+  - **Orbital Period (`pl_orbper`):** The **`50%` median** planet takes only **`10.64` days** to orbit its star, yet the **`mean`** is **`70,021` days** (`7.00e+04`) because extreme wide-orbit planets (`max = 402,000,000` days) drag the average up by a factor of 6,500x!
+  - **Planet Mass (`pl_bmasse`):** The **`50%` median** planet weighs **`9.32` Earths**, yet the **`mean`** is **`404.41` Earths** because massive gas giants and brown-dwarf-borderline objects (`max = 12,651.50` Earths, ~40x Jupiter) skew the average.
+  - **Planet Radius (`pl_rade`):** The **`50%` median** planet is **`2.86` Earth radii** (a sub-Neptune), while the **`mean`** is **`5.85` Earth radii** (pulled upward by inflated gas giants up to `max = 87.21` Earth radii).
+- **Key Takeaway:** Whenever data is heavily skewed like this, **you must use the Median (`50%`) rather than the Mean (`average`)** to describe a "typical" planet!
+
+---
+
+### Step 2.3: Data Cleaning Strategy — Dropping Incomplete Rows vs. Keeping Columns (Cell 4)
+
+#### 1. Why drop rows with missing `pl_orbper`, `pl_rade`, `pl_bmasse`, and `st_teff` instead of filling them in with averages?
+
+- In business data science, people sometimes fill missing values (`fillna`) with the column average. In physics and astronomy, filling in a missing planet's mass with the average mass (`404 Earths`) would fabricate fake physics—turning a small rocky planet into a gas giant!
+- Instead, we use `df_raw.dropna(subset=[...]).copy()` to filter down to planets that have valid measurements for our core physical variables.
+- Notice we do **not** put `pl_eqt` (equilibrium temperature, missing 540 rows) inside `subset=[...]` right now—so we don't needlessly throw away hundreds of good planets that only lack an estimated temperature.
