@@ -1,210 +1,152 @@
-# NASA Exoplanet Archive: Exploratory Data Science Lab
+# NASA Exoplanet Archive — Data Science Lab Notes
+
+> **How to read this file in VS Code:** Press **`Ctrl + Shift + V`** to switch from raw text to the clean, formatted Reader View!
 
 ---
 
-## PART I: Step-by-Step Build Manual (Plain-English Checklist)
+## PART I: Step-by-Step Build Manual
 
-### Step 1.0: Setting Up the Folder, Virtual Environment, and GitHub Repo
+### Workspace & Git Setup (Before Coding)
 
-1. **Create the project folder:** Make a new folder on your computer named `exoplanet_eda_lab` and open it directly inside VS Code.
-2. **Open the VS Code terminal:** Open the built-in terminal inside VS Code (`Ctrl + ~`). Using PowerShell inside VS Code is completely fine and automatically opens inside your project folder.
-3. **Create a Python virtual environment (`venv`):**
-   - Run `python -m venv venv` in the terminal. _(The first `venv` calls Python's built-in environment tool; the second `venv` is the name of the folder it creates)._
-   - Activate the environment by running `.\venv\Scripts\Activate.ps1`. Confirm that `(venv)` appears in green at the far left of your terminal prompt.
-   - _(Optional)_ If `pip` displays a notice that a newer version is available, run `python.exe -m pip install --upgrade pip`.
-4. **Create `requirements.txt` and install packages:**
-   - Create a file named `requirements.txt` and list the 6 core libraries on separate lines: `pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, and `ipykernel`.
-   - Run `pip install -r requirements.txt` to install all 6 packages into your active `(venv)`.
-5. **Create `.gitignore`:**
-   - Create a file named `.gitignore` and add these lines so Git ignores heavy folders, temporary files, and downloaded CSV datasets:
-     ```text
-     venv/
-     .venv/
-     __pycache__/
-     .ipynb_checkpoints/
-     *.csv
-     ```
-6. **Create your project files:**
-   - Create an empty notebook named `exoplanet_eda.ipynb` (and select your `venv` Python kernel in the top-right corner of VS Code).
-   - Create `README.md` (with the Data Dictionary table) and `LAB_NOTES.md`.
-7. **Initialize Git and push to GitHub:**
-   - Create an empty repository named `exoplanet_eda_lab` on GitHub.com (do not check the box to add a README on GitHub).
-   - Run these commands in your VS Code terminal:
-     ```powershell
-     git init
-     git add .
-     git commit -m "chore: initialize repository structure, gitignore, and lab notes"
-     git branch -M main
-     git remote add origin [https://github.com/JacobMenne/exoplanet_eda_lab.git](https://github.com/JacobMenne/exoplanet_eda_lab.git)
-     git push -u origin main
-     ```
-
-### Step 1.1: Downloading and Saving the Exoplanet Data (Cell 1)
-
-1. **Import your tools:** At the top of Cell 1, import `os` and `pandas as pd`.
-2. **Store the filename and web link in variables:**
-   - `RAW_FILE = "exoplanets_raw.csv"`
-   - `TAP_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,hostname,discoverymethod,disc_year,sy_snum,sy_pnum,pl_orbper,pl_rade,pl_bmasse,pl_eqt,st_teff,sy_dist+from+pscomppars&format=csv"`
-3. **Check if the file is already on your computer (`if / else`):**
-   - Write `if os.path.exists(RAW_FILE):` to load `df_raw = pd.read_csv(RAW_FILE)` from disk.
-   - Write `else:` to download `df_raw = pd.read_csv(TAP_URL)` and save it via `df_raw.to_csv(RAW_FILE, index=False)`.
-4. **Inspect the loaded table:**
-   - Print `df_raw.shape` (`6470` rows, `12` columns) and display `df_raw.head()`.
-5. **Add a Markdown Reference Cell directly BELOW Cell 1:** Click `+ Markdown` under Cell 1 and paste the 12-column dictionary so the column definitions sit directly underneath the rendered `df_raw.head()` table.
-6. **Save and commit to Git:** Commit (`feat(ingest): add NASA exoplanet download with local CSV caching`) and push.
-
-### Step 2.1: Checking Data Types and Counting Missing Values (Cell 2)
-
-1. **Check column data types and row counts:** In Cell 2, run `df_raw.info()`.
-2. **Count missing values and percentages:**
-   - `missing_count = df_raw.isna().sum()`
-   - `missing_pct = (df_raw.isna().mean() * 100).round(2)`
-3. **Combine into a single side-by-side summary table:**
-   - `missing_summary = pd.DataFrame({"Missing Count": missing_count, "Missing %": missing_pct})`
-   - Put `missing_summary` on the last line of Cell 2.
-4. **Save and commit to Git:** Commit (`feat(eda): add schema info and missing value summary table in cell 2`).
-
-### Step 2.2: Checking Summary Math, Ranges, and Weird Outliers (Cell 3)
-
-1. **Count planets by discovery method:** At the top of Cell 3, run `print(df_raw["discoverymethod"].value_counts())`.
-2. **Generate summary statistics for all number columns:** On the final line of Cell 3, run `df_raw.describe().round(2)`.
-3. **Add a Markdown Reference Cell directly BELOW Cell 3:** Click `+ Markdown` under Cell 3 and paste the definitions for Discovery Methods (`Transit`, `Radial Velocity`, etc.) and `.describe()` rows (`mean`, `std`, `50%`) so they sit directly underneath the `.describe()` output table for easy side-by-side reading.
-4. **Save and commit to Git:** Commit (`feat(eda): add numeric summary statistics and discovery method counts in cell 3`).
-
-### Step 2.3: Cleaning the Data and Filtering Missing/Extreme Rows (Cell 4)
-
-1. **Decide what "clean" means for our physical analysis:**
-   - We want a clean table named `df_clean` where every planet has a known **Orbital Period (`pl_orbper`)**, **Planet Radius (`pl_rade`)**, **Planet Mass (`pl_bmasse`)**, and **Star Temperature (`st_teff`)**.
-2. **Drop rows missing those core columns (`.dropna()`):**
-   - In Cell 4, create `df_clean` by calling `df_raw.dropna(subset=["pl_orbper", "pl_rade", "pl_bmasse", "st_teff"]).copy()`. _(Adding `.copy()` at the end tells `pandas` to make `df_clean` its own independent table in memory so modifying it later never triggers warnings)._
-3. **Verify how many rows survived:**
-   - Print the original row count (`len(df_raw)`), the cleaned row count (`len(df_clean)`), and how many incomplete rows were removed (`len(df_raw) - len(df_clean)`).
-4. **Save the cleaned dataset to disk:**
-   - Save `df_clean` to `"exoplanets_clean.csv"` using `.to_csv("exoplanets_clean.csv", index=False)`.
-5. **Save and commit to Git:** Commit (`feat(clean): drop incomplete physical rows and save clean dataset in cell 4`).
+1. Create a folder named `exoplanet_eda_lab` and open it in VS Code.
+2. Open the VS Code terminal (`Ctrl + ~`) and create a virtual environment: `python -m venv venv`
+3. Activate the environment: `.\venv\Scripts\Activate.ps1`
+4. Create `requirements.txt` (listing `pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `ipykernel`) and run: `pip install -r requirements.txt`
+5. Create `.gitignore` (listing `venv/`, `.venv/`, `__pycache__/`, `.ipynb_checkpoints/`, and `*.csv`).
+6. Create `exoplanet_eda.ipynb`, `README.md`, and `LAB_NOTES.md`.
+7. Initialize Git, commit, link your GitHub repository, and push to `origin main`.
 
 ---
 
-## PART II: Detailed Breakdown, Q&A, and Why We Made Each Decision
+### Pillar 1: Ingestion & Capture
 
-### Step 1.0: Project Setup, Operating System, and Git Questions
+#### Cell 1 — Download & Cache Raw Exoplanet Data
 
-#### Q1: Why do this Exoplanet project before the Neo-Assyrian texts project?
-
-- **The Reason:** The NASA Exoplanet dataset is already organized into a neat, flat spreadsheet (rows and columns of numbers and simple labels). This lets you focus 100% on learning core `pandas` commands. Text datasets (like damaged cuneiform letters) require heavy string cleanup and regex parsing before you even have a usable table. Starting with clean rows and columns builds your core `pandas` confidence first.
-
-#### Q2: Should I build this on native Windows or inside an Ubuntu Virtual Machine (VM)?
-
-- **The Reason:** On a computer with 8GB of RAM, running a full graphical Ubuntu Virtual Machine splits your memory in half (giving ~4GB to Windows and ~4GB to Ubuntu), which causes VS Code and Jupyter to lag. Because `pandas`, `numpy`, and `matplotlib` work identically on Windows and Linux, working directly in **native Windows** gives your code access to all 8GB of RAM.
-
-#### Q3: Is PowerShell okay to use, and should I run it standalone or inside VS Code?
-
-- **The Reason:** PowerShell works great for Python and Git. Always use the **terminal built into VS Code** rather than a separate PowerShell window because VS Code automatically starts the terminal inside your project folder and automatically activates your `(venv)` environment whenever you open a new tab.
-
-#### Q4: Why does the virtual environment command say `venv` twice (`python -m venv venv`)?
-
-- **The Reason:**
-  - `python -m venv` tells Python: _"Run the built-in module (`-m`) named `venv`."_
-  - The second `venv` is simply the **name of the folder** you want to create on your computer.
-  - We use a virtual environment so that the packages we install for this project stay inside this folder and never clash with other Python projects on your computer.
-
-#### Q5: Why did we list only 6 packages in `requirements.txt` instead of running `pip freeze`?
-
-- **The Reason:** When you install a big library like `pandas`, `pip` automatically installs dozens of tiny helper packages behind the scenes. Putting only the 6 main libraries we actually use (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, and `ipykernel`—which lets VS Code run Jupyter Notebook cells) keeps `requirements.txt` clean, readable, and easy to install on any machine.
-
-#### Q6: How important is the `pip` upgrade warning (`24.0 -> 26.3`)?
-
-- **The Reason:** Low priority. When Python creates a new `venv`, it copies the default version of `pip` that originally came with your Python installer. Upgrading `pip` is optional, though running `python.exe -m pip install --upgrade pip` clears the notice and helps download newer pre-packaged libraries faster.
-
-#### Q7: Why does `git branch -M main` happen _after_ the first commit?
-
-- **The Reason:** When you run `git init` in an empty folder, Git prepares to track files, but no branch technically exists until the moment you save your first commit (`git commit -m "..."`). Running `git branch -M main` right after that first commit guarantees your primary branch is named `main` before you push it to GitHub.
+1. **Header Above Cell 1:** Add a Markdown cell: `### [Pillar 1: Ingestion & Capture] — Cell 1: Download & Cache Raw Exoplanet Data`
+2. **Imports & Variables:** Import `os` and `pandas as pd`. Create two string variables: `RAW_FILE` (`"exoplanets_raw.csv"`) and `TAP_URL` (the NASA query link).
+3. **Offline Cache Check (`if / else`):**
+   - If `os.path.exists(RAW_FILE)` is true, load `df_raw = pd.read_csv(RAW_FILE)`.
+   - Otherwise, download `df_raw = pd.read_csv(TAP_URL)` from NASA and save it locally with `df_raw.to_csv(RAW_FILE, index=False)`.
+4. **Verify Table:** Print `df_raw.shape` (`6470 rows, 12 columns`) and display `df_raw.head()`.
+5. **Reference Below Cell 1:** Add a Markdown cell below the output containing the 12-column dictionary.
+6. **Git Checkpoint:** Commit with `feat(ingest): add NASA exoplanet download with local CSV caching`
 
 ---
 
-### Step 1.1: Understanding the Data Download and Caching Code (Cell 1)
+### Pillar 2: Preparation & Cleaning
 
-#### Q8: Why cannot Python combine a string and a tuple using `+` in `print()`, and how do we fix it?
+#### Cell 2 — Audit Data Types & Count Missing Values
 
-- **The Reason:** Unlike some languages that automatically convert numbers or tuples into text when you use `+`, Python requires you to be explicit so you don't accidentally mix up math addition and text joining. The cleanest way to print text and variables together is using an **f-string**: put an `f` before the opening quote and put any variable inside curly braces, like `print(f"Dataset dimensions: {df_raw.shape}")`.
+1. **Header Above Cell 2:** Add a Markdown cell: `### [Pillar 2: Preparation & Cleaning] — Cell 2: Audit Data Types & Count Missing Values`
+2. **Check Schema:** Run `df_raw.info()` to inspect column data types (`str`, `int64`, `float64`) and non-empty counts.
+3. **Count Missing Data:** Calculate `missing_count = df_raw.isna().sum()` and `missing_pct = (df_raw.isna().mean() * 100).round(2)`.
+4. **Display Summary Table:** Combine both into `missing_summary = pd.DataFrame({"Missing Count": missing_count, "Missing %": missing_pct})` and place `missing_summary` on the final line.
+5. **Git Checkpoint:** Commit with `feat(clean): add schema info and missing value summary table in cell 2`
 
-#### Q9: What does the Git warning `LF will be replaced by CRLF` mean?
+#### Cell 3 — Audit Number Ranges, Skew & Category Counts
 
-- **The Reason:** Linux/Mac computers use one invisible character (`LF`) to mark the end of a line, while Windows uses two (`CRLF`). This warning simply means Git is automatically translating the file's invisible line endings to match Windows. It is completely harmless and does not affect your code.
+1. **Header Above Cell 3:** Add a Markdown cell: `### [Pillar 2: Preparation & Cleaning] — Cell 3: Audit Number Ranges, Skew & Category Counts`
+2. **Count Categories:** Run `print(df_raw["discoverymethod"].value_counts())` to see how planets were found.
+3. **Inspect Number Ranges:** Run `df_raw.describe().round(2)` on the final line to check `min`, `50%` (median), `mean`, `std`, and `max`.
+4. **Reference Below Cell 3:** Add a Markdown cell below the output explaining the Discovery Methods and `.describe()` rows.
+5. **Git Checkpoint:** Commit with `feat(clean): add summary stats and discovery method audit in cell 3`
 
-#### Q10: Why does copying a table from a Jupyter Notebook produce either mashed text without spaces or raw HTML `<table>` code?
+#### Cell 4 — Filter Incomplete Rows & Save Clean Dataset
 
-- **The Reason:** When you put `df_raw.head()` on the last line of a cell without `print()`, Jupyter renders an HTML webpage table for visual readability. Copying that visual table grabs either the unspaced HTML cells or the raw HTML source code. Whenever you want clean, space-aligned plain text to copy and paste, wrap the command in `print()`, like `print(df_raw.head())`.
-
-#### 1. Why did we pick the `pscomppars` table from NASA instead of the `ps` table?
-
-- NASA's standard `ps` table adds a new row every time a scientific paper is published about a planet—meaning a famous planet like `TRAPPIST-1 e` appears over a dozen times.
-- The **`pscomppars` (Composite Parameters)** table combines the best measurements into **strictly 1 row per confirmed planet** (`6,470` unique planets total). Always verify what one row represents before doing math on a dataset.
-
-#### 2. Why use `os.path.exists()` to save a local CSV copy?
-
-- Downloading from NASA takes several seconds and fails if NASA's servers go down. Once saved as `exoplanets_raw.csv` on your computer, loading it takes less than a tenth of a second, works offline, and guarantees your total planet count (`6,470`) won't shift mid-project.
-
-#### 3. Why do we pass `index=False` inside `.to_csv()`?
-
-- Every `pandas` table automatically numbers its rows (`0, 1, 2, 3...`) down the left side. Passing `index=False` tells `pandas` not to save those row numbers as an extra unnamed column in the CSV file.
-
----
-
-### Step 2.1: Structural Inspection & Missing Value Audit (Cell 2)
-
-#### Q11: Why did my initial Cell 2 output look misaligned on the first line?
-
-- **The Reason:** `df_raw.isna().sum()` outputs 12 separate lines of text. Putting `{df_raw.isna().sum()}` right after `"Total missing rows in each column: "` without a line break puts the first column (`pl_name 0`) on the same line as the title and drops the remaining 11 columns underneath. Adding `\n` (newline) before `{...}` fixes the alignment.
-
-#### Q12: How can we prevent VS Code from truncating long outputs without changing global VS Code settings?
-
-- **The Reason:** Printing two separate 12-line Series (`isna().sum()` and `isna().mean()`) on top of `df_raw.info()` creates nearly 50 lines of plain text, triggering VS Code's 30-line cell output limit. By combining `missing_count` and `missing_pct` into a single 2-column DataFrame (`pd.DataFrame({"Missing Count": missing_count, "Missing %": missing_pct})`) and placing it on the last line of the cell, we cut the vertical height in half, drop the redundant `dtype:` footers, and render a clean HTML table.
-
-#### 1. What We Found in Our Missing Value Audit (Out of 6,470 Total Planets)
-
-- **0% Missing (100% Complete):** `pl_name`, `hostname`, `discoverymethod`, `disc_year`, `sy_snum`, and `sy_pnum` have all `6,470` rows filled in.
-- **Top 3 Columns with Missing Values (`NaN`):**
-  1. **`pl_eqt` (Planet Equilibrium Temperature): 540 missing rows (8.35% missing).** Calculating a planet's temperature requires knowing both the host star's brightness/size and the planet's exact orbital distance. If either is unknown, `pl_eqt` cannot be calculated.
-  2. **`pl_orbper` (Orbital Period): 356 missing rows (5.50% missing).** Planets discovered via Direct Imaging (orbiting far away from their star over hundreds of years) or Microlensing (a one-time gravity lens event) often do not have a measured orbital period.
-  3. **`st_teff` (Star Surface Temperature): 309 missing rows (4.78% missing).** Very faint microlensing host stars or exotic remnants (like pulsars/white dwarfs) often lack standard optical temperature readings.
-- **Nearly Complete Physical Columns:** `pl_rade` (only 50 missing / 0.77%), `pl_bmasse` (only 31 missing / 0.48%), and `sy_dist` (only 28 missing / 0.43%).
+1. **Header Above Cell 4:** Add a Markdown cell: `### [Pillar 2: Preparation & Cleaning] — Cell 4: Filter Incomplete Rows & Save Clean Dataset`
+2. **Drop Incomplete Rows:** Create `df_clean` using `df_raw.dropna(subset=["pl_orbper", "pl_rade", "pl_bmasse", "st_teff"]).copy()`.
+3. **Print Row Audit:** Print the row count before (`6470`), after (`6019`), and how many rows were removed (`451`).
+4. **Save Clean File:** Save to disk with `df_clean.to_csv("exoplanets_clean.csv", index=False)`.
+5. **Git Checkpoint:** Commit with `feat(clean): drop incomplete physical rows and save clean dataset in cell 4`
 
 ---
 
-### Step 2.2: Summary Statistics, Discovery Methods & Extreme Outliers (Cell 3)
+### Pillar 3: Exploration & Analysis
 
-#### Q13: What does `std` (Standard Deviation) mean in `.describe()`, and why is `pl_orbper` written in `e+04` notation?
+#### Cell 5 — Group by Discovery Method to Expose Telescope Biases
 
-- **What `std` Means:** Standard deviation measures how spread out the numbers are around the average (`mean`). If `std` is small (like `0.34` for `sy_snum`), almost every row is very close to the average. If `std` is huge (like `1,149.19` for `pl_bmasse`), the values vary wildly across thousands of units.
-- **Why `e+04` / `e+08` Shows Up:** Whenever a column has gigantic numbers (like `402,000,000` days for the longest orbital period), `pandas` switches that column to scientific notation (`4.02e+08` = $4.02 \times 10^8$) so the column doesn't stretch too wide across the screen.
-
-#### Q14: Is it better to place reference Markdown cells above or below the code cell?
-
-- **The Reason:** In Jupyter Notebooks, a code cell's output renders directly **below** the code block. Placing a short 1-line title header _above_ a code cell is common, but placing **definitions, glossaries, and analytical takeaways directly _below_ the code cell** puts your reference text right next to the output table it explains—so you don't have to scroll back and forth over the code box to compare definitions against numbers.
-
-#### 1. What We Found in Our Discovery Method Breakdown (`.value_counts()`)
-
-- **Two Methods Dominate (92.8% of all known exoplanets):**
-  1. **`Transit` (4,799 planets — 74.2%):** Space telescopes like _Kepler_ and _TESS_ stared at hundreds of thousands of stars simultaneously, making Transit by far the most prolific discovery method.
-  2. **`Radial Velocity` (1,205 planets — 18.6%):** Ground-based spectrographs measuring stellar wobble account for nearly a fifth of all discoveries.
-  3. **All Other 9 Methods Combined (466 planets — 7.2%):** `Microlensing` (294), `Imaging` (98), and timing/astrometric methods make up a small, specialized fraction of the catalog.
-
-#### 2. What We Found Comparing Median (`50%`) vs. Mean (`average`) in `.describe()`
-
-- **No `-999` Sentinel Codes:** Looking at the `min` row, every column has a physically valid positive minimum (`min` orbital period = `0.09` days / ~2.1 hours; `min` radius = `0.31` Earths; `min` mass = `0.02` Earths; `min` distance = `1.30` parsecs, which is Proxima Centauri!). NASA already uses true `NaN`s instead of `-999` placeholders.
-- **Massive Right-Skew in Orbital Period, Radius, and Mass:**
-  - **Orbital Period (`pl_orbper`):** The **`50%` median** planet takes only **`10.64` days** to orbit its star, yet the **`mean`** is **`70,021` days** (`7.00e+04`) because extreme wide-orbit planets (`max = 402,000,000` days) drag the average up by a factor of 6,500x!
-  - **Planet Mass (`pl_bmasse`):** The **`50%` median** planet weighs **`9.32` Earths**, yet the **`mean`** is **`404.41` Earths** because massive gas giants and brown-dwarf-borderline objects (`max = 12,651.50` Earths, ~40x Jupiter) skew the average.
-  - **Planet Radius (`pl_rade`):** The **`50%` median** planet is **`2.86` Earth radii** (a sub-Neptune), while the **`mean`** is **`5.85` Earth radii** (pulled upward by inflated gas giants up to `max = 87.21` Earth radii).
-- **Key Takeaway:** Whenever data is heavily skewed like this, **you must use the Median (`50%`) rather than the Mean (`average`)** to describe a "typical" planet!
+1. **Header Above Cell 5:** Add a Markdown cell: `### [Pillar 3: Exploration & Analysis] — Cell 5: Group by Discovery Method to Expose Telescope Biases`
+2. **Group and Aggregate (`groupby` + `agg`):**
+   - Take `df_clean` and group it by `"discoverymethod"` using `df_clean.groupby("discoverymethod")`.
+   - Select the 4 core physical columns in double square brackets: `[["pl_orbper", "pl_rade", "pl_bmasse", "sy_dist"]]`.
+   - Chain `.agg(["count", "median"]).round(2)` onto the end and store the result in `method_summary`.
+3. **Sort from Most Common to Rarest:**
+   - Sort `method_summary` by planet count descending: `method_summary = method_summary.sort_values(by=("pl_orbper", "count"), ascending=False)`.
+   - Place `method_summary` on the final line of Cell 5 to display the comparison table.
+4. **Git Checkpoint:** Commit with `feat(eda): add discovery method groupby median comparison in cell 5`
 
 ---
 
-### Step 2.3: Data Cleaning Strategy — Dropping Incomplete Rows vs. Keeping Columns (Cell 4)
+---
 
-#### 1. Why drop rows with missing `pl_orbper`, `pl_rade`, `pl_bmasse`, and `st_teff` instead of filling them in with averages?
+## PART II: Concepts, Rationale & Q&A Guide
 
-- In business data science, people sometimes fill missing values (`fillna`) with the column average. In physics and astronomy, filling in a missing planet's mass with the average mass (`404 Earths`) would fabricate fake physics—turning a small rocky planet into a gas giant!
-- Instead, we use `df_raw.dropna(subset=[...]).copy()` to filter down to planets that have valid measurements for our core physical variables.
-- Notice we do **not** put `pl_eqt` (equilibrium temperature, missing 540 rows) inside `subset=[...]` right now—so we don't needlessly throw away hundreds of good planets that only lack an estimated temperature.
+### Workspace & Environment Concepts
+
+| Question / Topic                                                  | Plain-English Explanation                                                                                                                                                                              |
+| :---------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Why start with Exoplanets before Neo-Assyrian texts?**          | The Exoplanet catalog is already a clean table of rows and columns, letting you learn core `pandas` commands first. Cuneiform text requires complex string/regex cleanup before you even have a table. |
+| **Why use Native Windows instead of an Ubuntu VM?**               | On an 8GB RAM machine, a graphical VM splits memory in half (~4GB each), causing lag. Native Windows gives VS Code and Jupyter full access to all 8GB of RAM.                                          |
+| **Why use VS Code's built-in PowerShell terminal?**               | It automatically opens inside your project folder and activates your `(venv)` environment whenever you open a new terminal tab.                                                                        |
+| **Why does `python -m venv venv` say `venv` twice?**              | `-m venv` runs Python's built-in environment tool; the second `venv` is the name of the folder it creates on your computer.                                                                            |
+| **Why list only 6 packages in `requirements.txt`?**               | Listing only direct tools (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `ipykernel`) keeps the file clean instead of dumping 40+ hidden sub-packages from `pip freeze`.                        |
+| **Why does `git branch -M main` come after the first commit?**    | Git doesn't create a real branch on disk until the first commit is saved. Running `git branch -M main` right after ensures the branch is named `main`.                                                 |
+| **What does the Git `LF will be replaced by CRLF` warning mean?** | Linux uses one invisible character (`LF`) for line breaks; Windows uses two (`CRLF`). Git is simply matching Windows formatting automatically. It is completely harmless.                              |
+| **Where should Markdown cells go in a Jupyter Notebook?**         | **Sandwich Pattern:** Put a 1-line Pillar/Step header **above** the code cell, and put glossaries, definitions, and takeaways **below** the code cell so they sit right next to the output table.      |
+| **Why did `LAB_NOTES.md` look messy in VS Code at first?**        | Viewing raw `.md` source code shows all the `#`, `**`, and `                                                                                                                                           | ` formatting symbols. Pressing **`Ctrl + Shift + V`\*\* in VS Code opens the clean, formatted Reader Preview. |
+
+---
+
+### Pillar 1: Ingestion & Capture (Cell 1 Rationale)
+
+- **Why We Picked `pscomppars` Over `ps`:** NASA's general `ps` table has multiple rows for the same planet (one per published paper), which would count famous planets 15 times and ruin our averages. The `pscomppars` table has **strictly 1 row per planet** (`6,470` unique planets).
+- **Why We Cache `exoplanets_raw.csv` Locally:** Checking `os.path.exists()` means we only download from NASA once. Every future run loads from your hard drive in 0.1 seconds, works offline, and locks in our exact `6,470` planet count so new weekly NASA discoveries don't change our numbers mid-project.
+- **Why We Use `index=False` in `.to_csv()`:** Stops `pandas` from saving its automatic row numbers (`0, 1, 2...`) as an extra unnamed column inside the CSV file.
+- **Why We Use f-strings (`print(f"... {df_raw.shape}")`):** Python won't let you combine text and tuples with `+`. Putting `f` before the quote lets you drop any variable straight into `{...}`.
+- **Why `df_raw.head()` vs `print(df_raw.head())` Matters:** Leaving `df_raw.head()` alone on the last line renders a shaded HTML webpage table in VS Code. Wrapping it in `print()` outputs plain text that copies and pastes cleanly.
+
+---
+
+### Pillar 2: Preparation & Cleaning (Cells 2, 3 & 4 Rationale)
+
+#### Why Are Cells 2 and 3 Part of "Preparation & Cleaning"?
+
+Before you can clean a dataset (Cell 4), you have to **diagnose what is broken, missing, or skewed** (Cells 2 and 3). Looking only at the first 5 rows in Cell 1 (`df_raw.head()`) tricked us into thinking there were zero missing values because the top 5 rows happened to be complete!
+
+#### Cell 2 Takeaways — What Is Missing Out of 6,470 Planets?
+
+- **How `.isna().sum()` Works:** `.isna()` turns every cell into `True` (`1` if missing) or `False` (`0` if present). `.sum()` adds the `1`s to count missing rows; `.mean() * 100` calculates the percentage missing.
+- **Why Combine into a Mini DataFrame (`missing_summary`):** Putting counts and percentages side-by-side in `pd.DataFrame({...})` prevents VS Code from cutting off the output at its 30-line plain-text limit.
+- **Our Missing Data Findings:**
+  1. **`pl_eqt` (Planet Temperature): 540 missing (8.35%).** Requires knowing both star brightness and orbital distance; if either is missing, temperature can't be calculated.
+  2. **`pl_orbper` (Orbital Period): 356 missing (5.50%).** Distant planets found by Imaging or one-time Microlensing events haven't been watched long enough to complete a full orbit.
+  3. **`st_teff` (Star Temperature): 309 missing (4.78%).** Faint microlensing stars or dead pulsar remnants lack standard temperature readings.
+  4. **`pl_rade` (50 missing), `pl_bmasse` (31 missing), `sy_dist` (28 missing):** Over 99% complete.
+
+#### Cell 3 Takeaways — Category Dominance & Extreme Skew
+
+- **Discovery Method Dominance (`.value_counts()`):**
+  - **Transit (`4,799` planets / 74.2%)** and **Radial Velocity (`1,205` planets / 18.6%)** account for **92.8%** of all known exoplanets.
+- **No Fake Error Codes (`min` row):** Some databases use `-999` for missing numbers. Checking `min` confirmed all minimums are real positive physics numbers (closest star `sy_dist = 1.30 pc` is Proxima Centauri!).
+- **Why `Mean` vs. `50%` (Median) Is Huge Here:**
+  - **`std` (Standard Deviation)** measures how spread out numbers are from the average.
+  - In **Orbital Period (`pl_orbper`)**, the **`50%` median** planet orbits in **`10.64` days**, but the **`mean`** is **`70,021` days** (`7.00e+04`) because one extreme planet takes `402,000,000` days (`4.02e+08`), dragging the average up 6,500x!
+  - In **Planet Mass (`pl_bmasse`)**, the **`50%` median** is **`9.32` Earths**, while the **`mean`** is **`404.41` Earths** due to massive gas giants (`max = 12,651.50` Earths).
+  - **Rule of Thumb:** Whenever a column has giant outliers, always use the **`50%` Median** instead of the `Mean` to describe a typical row!
+
+#### Cell 4 Takeaways — Results of Our Cleaning Filter (`6,470` $\rightarrow$ `6,019` Planets)
+
+- **Why Drop Rows (`.dropna()`) Instead of Filling Averages (`.fillna()`):** Filling a missing planet's mass with the average mass (`404 Earths`) would invent fake physics. Instead, we filtered down to rows with real measurements for `["pl_orbper", "pl_rade", "pl_bmasse", "st_teff"]`.
+- **Why Only 451 Rows Were Dropped (Instead of 746):** Even though `356 + 309 + 50 + 31 = 746` missing cells existed across those 4 columns, many missing values overlapped on the exact same rows (e.g., Microlensing planets missing both orbital period and star temperature). We retained **`6,019` complete planets (93.0% of the catalog)**.
+- **Why Put `.copy()` at the End:** Creates `df_clean` as an independent table in memory so adding new engineered columns in Pillar 3 won't trigger `pandas` warnings.
+
+---
+
+### Pillar 3: Exploration & Analysis (Cell 5 Rationale)
+
+#### How `.groupby()` and `.agg()` Work Together ("Split-Apply-Combine")
+
+- **`df_clean.groupby("discoverymethod")`:** Splits the `6,019` clean planets into separate buckets based on how they were discovered.
+- **`[["pl_orbper", "pl_rade", "pl_bmasse", "sy_dist"]]`:** Selects the 4 physical measurement columns we want to compare across those buckets. _(Notice the double square brackets `[[...]]`—in `pandas`, passing a list of multiple column names inside a selector requires an inner list `[]` inside the outer indexing brackets `[]`)._
+- **`.agg(["count", "median"])`:** Calculates both the number of planets (`count`) and the middle value (`median`) for each of those 4 columns inside every discovery method group.
+- **Why We Expect Different Medians Across Methods (Observational Bias):** Telescopes don't see all planets equally. By comparing the median orbital period (`pl_orbper`) and median mass (`pl_bmasse`) between `Transit`, `Radial Velocity`, and `Imaging`, we can prove mathematically how each telescope technique favors a completely different type of planet.
