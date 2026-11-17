@@ -22,7 +22,7 @@
 
 #### Cell 1 — Download & Cache Raw Exoplanet Data
 
-1. **Header Above Cell 1:** Add a Markdown cell: `### [Pillar 1: Ingestion & Capture] — Cell 1: Download & Cache Raw Exoplanet Data`
+1. **Header Above Cell 1:** Add a Markdown cell starting with `## `: `## [Pillar 1: Ingestion & Capture] — Cell 1: Download & Cache Raw Exoplanet Data`
 2. **Imports & Variables:** Import `os` and `pandas as pd`. Create two string variables: `RAW_FILE` (`"exoplanets_raw.csv"`) and `TAP_URL` (the NASA query link).
 3. **Offline Cache Check (`if / else`):**
    - If `os.path.exists(RAW_FILE)` is true, load `df_raw = pd.read_csv(RAW_FILE)`.
@@ -37,7 +37,7 @@
 
 #### Cell 2 — Audit Data Types & Count Missing Values
 
-1. **Header Above Cell 2:** Add a Markdown cell: `### [Pillar 2: Preparation & Cleaning] — Cell 2: Audit Data Types & Count Missing Values`
+1. **Header Above Cell 2:** Add a Markdown cell: `## [Pillar 2: Preparation & Cleaning] — Cell 2: Audit Data Types & Count Missing Values`
 2. **Check Schema:** Run `df_raw.info()` to inspect column data types (`str`, `int64`, `float64`) and non-empty counts.
 3. **Count Missing Data:** Calculate `missing_count = df_raw.isna().sum()` and `missing_pct = (df_raw.isna().mean() * 100).round(2)`.
 4. **Display Summary Table:** Combine both into `missing_summary = pd.DataFrame({"Missing Count": missing_count, "Missing %": missing_pct})` and place `missing_summary` on the final line.
@@ -45,7 +45,7 @@
 
 #### Cell 3 — Audit Number Ranges, Skew & Category Counts
 
-1. **Header Above Cell 3:** Add a Markdown cell: `### [Pillar 2: Preparation & Cleaning] — Cell 3: Audit Number Ranges, Skew & Category Counts`
+1. **Header Above Cell 3:** Add a Markdown cell: `## [Pillar 2: Preparation & Cleaning] — Cell 3: Audit Number Ranges, Skew & Category Counts`
 2. **Count Categories:** Run `print(df_raw["discoverymethod"].value_counts())` to see how planets were found.
 3. **Inspect Number Ranges:** Run `df_raw.describe().round(2)` on the final line to check `min`, `50%` (median), `mean`, `std`, and `max`.
 4. **Reference Below Cell 3:** Add a Markdown cell below the output explaining the Discovery Methods and `.describe()` rows.
@@ -53,7 +53,7 @@
 
 #### Cell 4 — Filter Incomplete Rows & Save Clean Dataset
 
-1. **Header Above Cell 4:** Add a Markdown cell: `### [Pillar 2: Preparation & Cleaning] — Cell 4: Filter Incomplete Rows & Save Clean Dataset`
+1. **Header Above Cell 4:** Add a Markdown cell: `## [Pillar 2: Preparation & Cleaning] — Cell 4: Filter Incomplete Rows & Save Clean Dataset`
 2. **Drop Incomplete Rows:** Create `df_clean` using `df_raw.dropna(subset=["pl_orbper", "pl_rade", "pl_bmasse", "st_teff"]).copy()`.
 3. **Print Row Audit:** Print the row count before (`6470`), after (`6019`), and how many rows were removed (`451`).
 4. **Save Clean File:** Save to disk with `df_clean.to_csv("exoplanets_clean.csv", index=False)`.
@@ -65,7 +65,7 @@
 
 #### Cell 5 — Group by Discovery Method to Expose Telescope Biases
 
-1. **Header Above Cell 5:** Add a Markdown cell: `### [Pillar 3: Exploration & Analysis] — Cell 5: Group by Discovery Method to Expose Telescope Biases`
+1. **Header Above Cell 5:** Add a Markdown cell: `## [Pillar 3: Exploration & Analysis] — Cell 5: Group by Discovery Method to Expose Telescope Biases`
 2. **Group with Named Aggregation:** Group `df_clean` by `"discoverymethod"` and pass keyword pairs directly inside `.agg(...)`:
    - `planet_count=("pl_name", "count")`
    - `median_period_days=("pl_orbper", "median")`
@@ -78,23 +78,37 @@
 
 #### Cell 6 — Feature Engineering: Calculate Planet Density & Size Classes
 
-1. **Header Above Cell 6:** Add a Markdown cell: `### [Pillar 3: Exploration & Analysis] — Cell 6: Engineer Bulk Density & Planet Size Classes`
+1. **Header Above Cell 6:** Add a Markdown cell: `## [Pillar 3: Exploration & Analysis] — Cell 6: Engineer Bulk Density & Planet Size Classes`
 2. **Calculate Planet Bulk Density (`density_gcc`):**
-   - Create a new column `"density_gcc"` (in grams per cubic centimeter, where Earth = `5.51`) by dividing `df_clean["pl_bmasse"]` by `df_clean["pl_rade"] ** 3` and multiplying by `5.51`:
-     `df_clean["density_gcc"] = (df_clean["pl_bmasse"] / (df_clean["pl_rade"] ** 3)) * 5.51`
+   - `df_clean["density_gcc"] = (df_clean["pl_bmasse"] / (df_clean["pl_rade"] ** 3)) * 5.51`
 3. **Create Planet Size Categories (`size_class`) Using `pd.cut()`:**
-   - Slice `df_clean["pl_rade"]` into 4 astronomical size bins using `pd.cut()`:
-     - `bins=[0, 1.25, 2.0, 4.0, 100]`
-     - `labels=["1. Earth-sized (<1.25 R_E)", "2. Super-Earth (1.25-2.0 R_E)", "3. Sub-Neptune (2.0-4.0 R_E)", "4. Gas Giant (>4.0 R_E)"]`
-4. **Group by `size_class` to Compare Rocky vs. Gas Worlds:**
-   - Group `df_clean` by `"size_class"` (passing `observed=False` or `observed=True` inside `.groupby("size_class", observed=True)`) and use `.agg(...)` to compute:
-     - `planet_count=("pl_name", "count")`
-     - `median_radius=("pl_rade", "median")`
-     - `median_mass=("pl_bmasse", "median")`
-     - `median_density_gcc=("density_gcc", "median")`
-     - `median_orbper_days=("pl_orbper", "median")`
-   - Chain `.round(2)` and display the resulting `size_summary` table on the final line.
-5. **Git Checkpoint:** Commit with `feat(eda): engineer bulk density and size class comparison in cell 6`
+   - Pass `df_clean["pl_rade"]` as the first argument inside `pd.cut(...)` with `bins=[0, 1.25, 2.0, 4.0, 100]` and `labels=["1. Earth-sized (<1.25 R_E)", "2. Super-Earth (1.25-2.0 R_E)", "3. Sub-Neptune (2.0-4.0 R_E)", "4. Gas Giant (>4.0 R_E)"]`.
+4. **Group by `size_class`:**
+   - Use `df_clean.groupby("size_class", observed=True).agg(...)` to compute `planet_count`, `median_radius`, `median_mass`, `median_density_gcc`, and `median_orbper_days`, chain `.round(2)`, and display `size_summary`.
+5. **Reference Below Cell 6:** Add a Markdown cell below the output explaining how density drops across the `2.0 R_E` boundary.
+6. **Git Checkpoint:** Commit with `feat(eda): engineer bulk density and size class comparison in cell 6`
+
+---
+
+### Pillar 4: Communication & Action
+
+#### Cell 7 — Visualize the Radius Distribution & Log-Log Mass-Radius Relationship
+
+1. **Header Above Cell 7:** Add a Markdown cell: `## [Pillar 4: Communication & Action] — Cell 7: Visualize Planet Radius & Mass-Radius Distributions`
+2. **Import Plotting Libraries:** At the top of Cell 7, import `matplotlib.pyplot as plt` and `seaborn as sns`.
+3. **Create a 2-Panel Side-by-Side Figure (`plt.subplots`):**
+   - Create a figure and two side-by-side chart axes (`ax1` and `ax2`) using `fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))`.
+4. **Left Chart (`ax1`) — Histogram of Small Planet Radii (`< 5.0 R_E`):**
+   - Filter to planets with `pl_rade < 5.0`: `small_planets = df_clean[df_clean["pl_rade"] < 5.0]`
+   - Plot a histogram on `ax1`: `sns.histplot(data=small_planets, x="pl_rade", bins=40, kde=True, ax=ax1)`
+   - Set title and labels on `ax1`: `ax1.set_title("Small Exoplanet Radius Distribution (< 5 Earth Radii)")`, `ax1.set_xlabel("Planet Radius (Earth Radii)")`, `ax1.set_ylabel("Number of Planets")`.
+5. **Right Chart (`ax2`) — Mass vs. Radius Scatter Plot on Log-Log Axes:**
+   - Plot a scatter chart on `ax2`: `sns.scatterplot(data=df_clean, x="pl_bmasse", y="pl_rade", hue="size_class", alpha=0.6, ax=ax2)`
+   - Set both axes on `ax2` to logarithmic scale so giant outliers don't squish the small planets: `ax2.set_xscale("log")` and `ax2.set_yscale("log")`.
+   - Set title and labels on `ax2`: `ax2.set_title("Exoplanet Mass vs. Radius (Log-Log Scale)")`, `ax2.set_xlabel("Planet Mass (Earth Masses - Log Scale)")`, `ax2.set_ylabel("Planet Radius (Earth Radii - Log Scale)")`.
+6. **Format Layout, Save PNG, and Display:**
+   - Run `plt.tight_layout()` so labels don't overlap, save the image with `plt.savefig("exoplanet_distributions.png", dpi=300)`, and call `plt.show()`.
+7. **Git Checkpoint:** Commit with `feat(viz): add radius histogram and log-log mass-radius scatter plot in cell 7`
 
 ---
 
@@ -104,17 +118,18 @@
 
 ### Workspace & Environment Concepts
 
-| Question / Topic                                                  | Plain-English Explanation                                                                                                                                                                              |
-| :---------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Why start with Exoplanets before Neo-Assyrian texts?**          | The Exoplanet catalog is already a clean table of rows and columns, letting you learn core `pandas` commands first. Cuneiform text requires complex string/regex cleanup before you even have a table. |
-| **Why use Native Windows instead of an Ubuntu VM?**               | On an 8GB RAM machine, a graphical VM splits memory in half (~4GB each), causing lag. Native Windows gives VS Code and Jupyter full access to all 8GB of RAM.                                          |
-| **Why use VS Code's built-in PowerShell terminal?**               | It automatically opens inside your project folder and activates your `(venv)` environment whenever you open a new terminal tab.                                                                        |
-| **Why does `python -m venv venv` say `venv` twice?**              | `-m venv` runs Python's built-in environment tool; the second `venv` is the name of the folder it creates on your computer.                                                                            |
-| **Why list only 6 packages in `requirements.txt`?**               | Listing only direct tools (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `ipykernel`) keeps the file clean instead of dumping 40+ hidden sub-packages from `pip freeze`.                        |
-| **Why does `git branch -M main` come after the first commit?**    | Git doesn't create a real branch on disk until the first commit is saved. Running `git branch -M main` right after ensures the branch is named `main`.                                                 |
-| **What does the Git `LF will be replaced by CRLF` warning mean?** | Linux uses one invisible character (`LF`) for line breaks; Windows uses two (`CRLF`). Git is simply matching Windows formatting automatically. It is completely harmless.                              |
-| **Where should Markdown cells go in a Jupyter Notebook?**         | **Sandwich Pattern:** Put a 1-line Pillar/Step header **above** the code cell, and put glossaries, definitions, and takeaways **below** the code cell so they sit right next to the output table.      |
-| **Why did `LAB_NOTES.md` look messy in VS Code at first?**        | Viewing raw `.md` source code shows all the `#`, `**`, and `                                                                                                                                           | ` formatting symbols. Pressing **`Ctrl + Shift + V`\*\* in VS Code opens the clean, formatted Reader Preview. |
+| Question / Topic                                                  | Plain-English Explanation                                                                                                                                                                                                    |
+| :---------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Why start with Exoplanets before Neo-Assyrian texts?**          | The Exoplanet catalog is already a clean table of rows and columns, letting you learn core `pandas` commands first. Cuneiform text requires complex string/regex cleanup before you even have a table.                       |
+| **Why use Native Windows instead of an Ubuntu VM?**               | On an 8GB RAM machine, a graphical VM splits memory in half (~4GB each), causing lag. Native Windows gives VS Code and Jupyter full access to all 8GB of RAM.                                                                |
+| **Why use VS Code's built-in PowerShell terminal?**               | It automatically opens inside your project folder and activates your `(venv)` environment whenever you open a new terminal tab.                                                                                              |
+| **Why does `python -m venv venv` say `venv` twice?**              | `-m venv` runs Python's built-in environment tool; the second `venv` is the name of the folder it creates on your computer.                                                                                                  |
+| **Why list only 6 packages in `requirements.txt`?**               | Listing only direct tools (`pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `ipykernel`) keeps the file clean instead of dumping 40+ hidden sub-packages from `pip freeze`.                                              |
+| **Why does `git branch -M main` come after the first commit?**    | Git doesn't create a real branch on disk until the first commit is saved. Running `git branch -M main` right after ensures the branch is named `main`.                                                                       |
+| **What does the Git `LF will be replaced by CRLF` warning mean?** | Linux uses one invisible character (`LF`) for line breaks; Windows uses two (`CRLF`). Git is simply matching Windows formatting automatically. It is completely harmless.                                                    |
+| **Where should Markdown cells go in a Jupyter Notebook?**         | **Sandwich Pattern:** Put a 1-line Pillar/Step header **above** the code cell, and put glossaries, definitions, and takeaways **below** the code cell so they sit right next to the output table.                            |
+| **Why did my 1-line Markdown header look tiny at first?**         | Markdown controls text size by starting the line with `#` symbols followed by a space (`# ` = Largest Title, `## ` = Large Section Header, `### ` = Medium Sub-header). Without `# `, Markdown prints tiny normal body text. |
+| **Why did `LAB_NOTES.md` look messy in VS Code at first?**        | Viewing raw `.md` source code shows all the `#`, `**`, and `                                                                                                                                                                 | ` formatting symbols. Pressing **`Ctrl + Shift + V`\*\* in VS Code opens the clean, formatted Reader Preview. |
 
 ---
 
@@ -172,7 +187,11 @@ Before you can clean a dataset (Cell 4), you have to **diagnose what is broken, 
 
 #### Q16: Why did defining `planet_count = ("pl_name", "count")` outside `.agg()` and passing `"planet_count"` in quotes cause an error?
 
-- **The Reason:** Putting quotes around `"planet_count"` inside `.agg("planet_count")` tells `pandas` to look for a built-in math function named `"planet_count"` (like `"mean"` or `"sum"`), which doesn't exist. Named aggregations must be written as **keyword arguments (`new_col_name=("old_col", "func")`) directly inside the parentheses of `.agg(...)`**, just like `index=False` sits directly inside `.to_csv(...)`. Wrapping the whole chain in outer parentheses `(...)` lets you format each step on its own clean, indented line.
+- **The Reason:** Putting quotes around `"planet_count"` inside `.agg("planet_count")` tells `pandas` to look for a built-in math function named `"planet_count"` (like `"mean"` or `"sum"`), which doesn't exist. Named aggregations must be written as **keyword arguments (`new_col_name=("old_col", "func")`) directly inside the parentheses of `.agg(...)`**, just like `index=False` sits directly inside `.to_csv(...)`.
+
+#### Q17: Why did `df_clean["pl_rade"].cut(...)` fail with an `AttributeError`, while `pd.cut(df_clean["pl_rade"], ...)` worked?
+
+- **The Reason:** In `pandas`, some tools are **column methods** attached to a Series (like `.isna()`, `.sum()`, `.round()`), while others are **top-level library functions** attached to `pd.` (like `pd.read_csv()`, `pd.DataFrame()`, and `pd.cut()`). For `pd.cut()`, you call the function from `pd.` and pass the column `df_clean["pl_rade"]` as the first item inside the parentheses.
 
 #### Cell 5 Takeaways — What the Grouped Medians Reveal About Telescope Bias
 
@@ -184,8 +203,23 @@ Before you can clean a dataset (Cell 4), you have to **diagnose what is broken, 
 3. **Direct Imaging (`22` clean planets — Extreme Outer Giants):**
    - Median orbital period is **`33,100` days (~90.6 Earth years)** and median mass is **`3,089.15` Earths** (~10x Jupiter!) around very close stars (**`41.24` parsecs**). Direct cameras can only resolve giant, glowing planets orbiting far outside their host star's glare.
 
-#### Cell 6 Concepts — What Is Feature Engineering (`density_gcc` & `size_class`)?
+#### Cell 6 Takeaways — What Our Bulk Density (`density_gcc`) Feature Engineering Proved
 
-- **What Feature Engineering Means:** Creating brand-new, physically meaningful columns from raw columns to reveal patterns that aren't obvious from raw numbers alone.
-- **The Bulk Density Formula (`density_gcc`):** Since a sphere's volume scales with $\text{Radius}^3$, dividing Earth-masses (`pl_bmasse`) by Earth-radii cubed (`pl_rade ** 3`) and multiplying by Earth's density (`5.51 g/cm³`) gives each planet's bulk density. Rocky planets have high densities (`~4 to 7 g/cm³`), whereas puffy gas-envelope planets have low densities (`~0.5 to 2.5 g/cm³`).
-- **How `pd.cut()` Works:** Takes a continuous number column (`pl_rade`) and slices it into named category buckets based on boundary numbers (`bins=[0, 1.25, 2.0, 4.0, 100]`), letting us group planets by physical class (`Earth-sized`, `Super-Earth`, `Sub-Neptune`, `Gas Giant`).
+- **1. Earth-sized (`<1.25 R_E` — `597` planets):** Median radius `1.06 R_E`, median mass `1.32 M_E`, and **median density `5.67 g/cm³`** (virtually identical to Earth's `5.51 g/cm³` solid rock/iron composition).
+- **2. Super-Earth (`1.25-2.0 R_E` — `1,203` planets):** Median radius `1.60 R_E`, median mass `3.33 M_E`, and **median density `4.43 g/cm³`** (predominantly rocky cores).
+- **3. Sub-Neptune (`2.0-4.0 R_E` — `2,075` planets):** Median radius `2.63 R_E`, median mass `7.65 M_E`, and **median density plunges to `2.31 g/cm³`!** Once a planet crosses `~2.0` Earth radii, it holds onto a thick hydrogen/helium gas envelope that inflates its volume and cuts its density in half.
+- **4. Gas Giant (`>4.0 R_E` — `2,144` planets):** Median radius `12.60 R_E`, median mass `292.40 M_E`, and **median density drops to `0.97 g/cm³`** (less dense than liquid water at `1.00 g/cm³`!).
+
+---
+
+### Pillar 4: Communication & Action (Cell 7 Rationale)
+
+#### 1. How `fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))` Works
+
+- Instead of making two separate charts stacked vertically, `plt.subplots(1, 2, figsize=(14, 5))` creates a single wide canvas (`14` inches wide by `5` inches tall) split into **1 row and 2 side-by-side columns** (`ax1` for the left chart, `ax2` for the right chart).
+- Passing `ax=ax1` or `ax=ax2` inside `seaborn` tells Python which side of the canvas to draw on.
+
+#### 2. Why Use a Logarithmic Scale (`set_xscale("log")`) on the Mass-Radius Scatter Plot?
+
+- Planet masses span nearly 6 orders of magnitude (from `0.02` Earths to `12,651` Earths). On a standard linear axis where every tick mark adds `+2,000`, all Earth-sized, Super-Earth, and Sub-Neptune planets (`0.1` to `20` Earths) get crushed into a single unreadable dot at `0`.
+- A **logarithmic (`log`) scale** spaces tick marks by powers of 10 (`0.1`, `1`, `10`, `100`, `1,000`, `10,000`), giving small rocky planets and massive gas giants equal visual space so the physical curve across all 4 size classes is clearly visible.
