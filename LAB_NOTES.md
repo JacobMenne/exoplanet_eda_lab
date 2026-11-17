@@ -12,7 +12,7 @@
 2. Open the VS Code terminal (`Ctrl + ~`) and create a virtual environment: `python -m venv venv`
 3. Activate the environment: `.\venv\Scripts\Activate.ps1`
 4. Create `requirements.txt` (listing `pandas`, `numpy`, `matplotlib`, `seaborn`, `scipy`, `ipykernel`) and run: `pip install -r requirements.txt`
-5. Create `.gitignore` (listing `venv/`, `.venv/`, `__pycache__/`, `.ipynb_checkpoints/`, and `*.csv`).
+5. Create `.gitignore` (listing `venv/`, `.venv/`, `__pycache__/`, `.ipynb_checkpoints/`, `*.csv`, and `*.db`).
 6. Create `exoplanet_eda.ipynb`, `README.md`, and `LAB_NOTES.md`.
 7. Initialize Git, commit, link your GitHub repository, and push to `origin main`.
 
@@ -22,7 +22,7 @@
 
 #### Cell 1 — Download & Cache Raw Exoplanet Data
 
-1. **Header Above Cell 1:** Add a Markdown cell starting with `## `: `## [Pillar 1: Ingestion & Capture] — Cell 1: Download & Cache Raw Exoplanet Data`
+1. **Header Above Cell 1:** Add a Markdown cell: `## [Pillar 1: Ingestion & Capture] — Cell 1: Download & Cache Raw Exoplanet Data`
 2. **Imports & Variables:** Import `os` and `pandas as pd`. Create two string variables: `RAW_FILE` (`"exoplanets_raw.csv"`) and `TAP_URL` (the NASA query link).
 3. **Offline Cache Check (`if / else`):**
    - If `os.path.exists(RAW_FILE)` is true, load `df_raw = pd.read_csv(RAW_FILE)`.
@@ -95,20 +95,32 @@
 #### Cell 7 — Visualize the Radius Distribution & Log-Log Mass-Radius Relationship
 
 1. **Header Above Cell 7:** Add a Markdown cell: `## [Pillar 4: Communication & Action] — Cell 7: Visualize Planet Radius & Mass-Radius Distributions`
-2. **Import Plotting Libraries:** At the top of Cell 7, import `matplotlib.pyplot as plt` and `seaborn as sns`.
-3. **Create a 2-Panel Side-by-Side Figure (`plt.subplots`):**
-   - Create a figure and two side-by-side chart axes (`ax1` and `ax2`) using `fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))`.
+2. **Import Plotting Libraries:** Import `matplotlib.pyplot as plt` and `seaborn as sns`.
+3. **Create a 2-Panel Side-by-Side Figure:** Run `fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))`.
 4. **Left Chart (`ax1`) — Histogram of Small Planet Radii (`< 5.0 R_E`):**
-   - Filter to planets with `pl_rade < 5.0`: `small_planets = df_clean[df_clean["pl_rade"] < 5.0]`
-   - Plot a histogram on `ax1`: `sns.histplot(data=small_planets, x="pl_rade", bins=40, kde=True, ax=ax1)`
-   - Set title and labels on `ax1`: `ax1.set_title("Small Exoplanet Radius Distribution (< 5 Earth Radii)")`, `ax1.set_xlabel("Planet Radius (Earth Radii)")`, `ax1.set_ylabel("Number of Planets")`.
+   - Filter `small_planets = df_clean[df_clean["pl_rade"] < 5.0]`.
+   - Plot `sns.histplot(data=small_planets, x="pl_rade", bins=40, kde=True, ax=ax1)` and set title/labels on `ax1`.
 5. **Right Chart (`ax2`) — Mass vs. Radius Scatter Plot on Log-Log Axes:**
-   - Plot a scatter chart on `ax2`: `sns.scatterplot(data=df_clean, x="pl_bmasse", y="pl_rade", hue="size_class", alpha=0.6, ax=ax2)`
-   - Set both axes on `ax2` to logarithmic scale so giant outliers don't squish the small planets: `ax2.set_xscale("log")` and `ax2.set_yscale("log")`.
-   - Set title and labels on `ax2`: `ax2.set_title("Exoplanet Mass vs. Radius (Log-Log Scale)")`, `ax2.set_xlabel("Planet Mass (Earth Masses - Log Scale)")`, `ax2.set_ylabel("Planet Radius (Earth Radii - Log Scale)")`.
-6. **Format Layout, Save PNG, and Display:**
-   - Run `plt.tight_layout()` so labels don't overlap, save the image with `plt.savefig("exoplanet_distributions.png", dpi=300)`, and call `plt.show()`.
-7. **Git Checkpoint:** Commit with `feat(viz): add radius histogram and log-log mass-radius scatter plot in cell 7`
+   - Plot `sns.scatterplot(data=df_clean, x="pl_bmasse", y="pl_rade", hue="size_class", alpha=0.6, ax=ax2)`.
+   - Set `ax2.set_xscale("log")` and `ax2.set_yscale("log")`, and set title/labels on `ax2`.
+6. **Format, Save PNG, and Display:** Run `plt.tight_layout()`, `plt.savefig("exoplanet_distributions.png", dpi=300)`, and `plt.show()`.
+7. **Reference Below Cell 7:** Add a Markdown cell below the charts explaining the Fulton Radius Valley (`~1.8-2.0 R_E` dip) and Gas Giant gravitational compression.
+8. **Git Checkpoint:** Commit with `feat(viz): add radius histogram and log-log mass-radius scatter plot in cell 7`
+
+#### Cell 8 — Load Cleaned Table into SQLite & Run SQL Queries
+
+1. **Header Above Cell 8:** Add a Markdown cell: `## [Pillar 4: Communication & Action] — Cell 8: Load Cleaned Data into SQLite & Query Nearby Rocky Worlds`
+2. **Import `sqlite3` and Connect:**
+   - Import `sqlite3` and open a connection to a local database file: `conn = sqlite3.connect("exoplanets.db")`.
+3. **Write `df_clean` to a Relational SQL Table:**
+   - Load all `6,019` rows into a table named `"exoplanets"`: `df_clean.to_sql("exoplanets", conn, if_exists="replace", index=False)`.
+4. **Execute an Analytical SQL Query (`pd.read_sql_query`):**
+   - Define a multi-line SQL string `query = """ ... """` that selects the top 10 closest rocky planets (`pl_rade <= 2.0`, `density_gcc >= 4.0`, `sy_dist <= 30.0`) ordered by distance (`ORDER BY sy_dist ASC LIMIT 10`).
+   - Run `nearby_rocky_df = pd.read_sql_query(query, conn)`.
+5. **Close Connection and Display Result:**
+   - Call `conn.close()` to release the database file cleanly, and put `nearby_rocky_df` on the final line of Cell 8.
+6. **Reference Below Cell 8:** Add a Markdown cell below the output explaining the `Proxima Centauri` and `Barnard's Star` rocky planet findings.
+7. **Git Checkpoint:** Commit with `feat(db): load cleaned exoplanets into SQLite and query nearby rocky worlds in cell 8`
 
 ---
 
@@ -212,14 +224,28 @@ Before you can clean a dataset (Cell 4), you have to **diagnose what is broken, 
 
 ---
 
-### Pillar 4: Communication & Action (Cell 7 Rationale)
+### Pillar 4: Communication & Action (Cells 7 & 8 Rationale)
 
-#### 1. How `fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))` Works
+#### Q18: Why did `figsize=14, 5` and `df_clean[pl_rade]` cause syntax errors in Cell 7?
 
-- Instead of making two separate charts stacked vertically, `plt.subplots(1, 2, figsize=(14, 5))` creates a single wide canvas (`14` inches wide by `5` inches tall) split into **1 row and 2 side-by-side columns** (`ax1` for the left chart, `ax2` for the right chart).
-- Passing `ax=ax1` or `ax=ax2` inside `seaborn` tells Python which side of the canvas to draw on.
+- **`figsize=(14, 5)`:** Because `plt.subplots()` takes multiple arguments separated by commas, width and height must be bundled together inside parentheses `(14, 5)` as a single two-number tuple.
+- **`df_clean["pl_rade"]`:** Column names inside square brackets must always be strings wrapped in quotation marks (`"pl_rade"`), otherwise Python looks for an undefined variable named `pl_rade`.
 
-#### 2. Why Use a Logarithmic Scale (`set_xscale("log")`) on the Mass-Radius Scatter Plot?
+#### Q19: Why did `pl.read_sql_query` fail in Cell 8 while `pd.read_sql_query` worked?
 
-- Planet masses span nearly 6 orders of magnitude (from `0.02` Earths to `12,651` Earths). On a standard linear axis where every tick mark adds `+2,000`, all Earth-sized, Super-Earth, and Sub-Neptune planets (`0.1` to `20` Earths) get crushed into a single unreadable dot at `0`.
-- A **logarithmic (`log`) scale** spaces tick marks by powers of 10 (`0.1`, `1`, `10`, `100`, `1,000`, `10,000`), giving small rocky planets and massive gas giants equal visual space so the physical curve across all 4 size classes is clearly visible.
+- **The Reason:** `read_sql_query()` is a top-level function inside the `pandas` library, which we imported under the alias **`pd`** in Cell 1 (`import pandas as pd`). Calling `pd.read_sql_query(query, conn)` runs the SQL query against the SQLite connection and returns the result as a formatted `pandas` DataFrame.
+
+#### Cell 7 Visual Takeaways — The Fulton Radius Valley & Gas Giant Compression
+
+1. **Why Is There a Dip Around `1.8 - 2.0 R_E` in the Left Histogram? (The Fulton Radius Valley):**
+   - That dip between `~1.4 R_E` (Super-Earths) and `~2.4 R_E` (Sub-Neptunes) is a real physical phenomenon caused by **photoevaporation**. Close-in planets get blasted by radiation from their host star: smaller rocky cores lose their gas atmosphere completely and shrink down to the `1.4 R_E` peak, while heavier cores hold onto their hydrogen/helium envelopes and stay inflated at `2.4 R_E`.
+2. **Why Do Gas Giants Level Off Horizontally Around `~11–13 R_E` in the Right Scatter Plot?**
+   - Above `~100` Earth masses (Saturn/Jupiter mass) all the way up to `10,000+` Earth masses (the Brown Dwarf threshold), strong gravity compresses the interior hydrogen gas into **electron-degenerate matter**. Adding more mass packs matter tighter into the core without making the planet physically wider—so gas giants stay roughly the size of Jupiter (`~11–13 R_E`) while becoming much denser!
+
+#### Cell 8 Takeaways — Bridging Pandas to SQLite & Our Closest Rocky Neighbors
+
+- **Why Load Cleaned Data into SQLite (`exoplanets.db`):** In production data pipelines, cleaned DataFrames are loaded into a relational database table (`df_clean.to_sql(...)`) so downstream analysts and applications can query the data using standard SQL (`SELECT ... FROM ... WHERE ... ORDER BY ...`).
+- **Top 10 Closest Rocky Worlds (`sy_dist <= 30 pc`, `pl_rade <= 2.0 R_E`, `density_gcc >= 4.0 g/cm³`):**
+  - **Slots 0 & 1 (`Proxima Cen d` & `Proxima Cen b` at `1.30 pc` / `4.24 ly`):** Orbiting the closest star to our Sun, `Proxima Cen b` is an Earth-sized rocky world (`1.02 R_E`, `1.055 M_E`, `5.48 g/cm³`) on an `11.18`-day habitable-zone orbit.
+  - **Slots 2–5 (`Barnard b, c, d, e` at `1.83 pc` / `5.96 ly`):** Four compact sub-Earth rocky planets (`0.64–0.74 R_E`) orbiting the second-closest star system to Earth.
+  - **Why All 10 Were Found by `Radial Velocity`:** Because `Transit` requires a lucky edge-on orbital alignment with Earth, almost none of our immediate stellar neighbors happen to transit. Instead, all 10 closest rocky exoplanets were discovered by measuring the Doppler gravitational wobble (`Radial Velocity`) of nearby red dwarf stars.
